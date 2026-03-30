@@ -31,6 +31,11 @@ function formatDiff(value) {
   }).format(value)} грн`;
 }
 
+function deltaIcon(value) {
+  if (!isValidNumber(value)) return "";
+  return value > 0 ? "🔺" : "🔻";
+}
+
 function buildTitle(item) {
   const parts = [item.model];
   if (item.storage) parts.push(item.storage);
@@ -137,54 +142,77 @@ function buildTelegramReport(data) {
   const marketGapAlerts = getMarketGapAlerts(data);
   const missingTrackedCoverage = getMissingTrackedCoverage(data);
 
-  lines.push(`Apple Market Monitor`);
-  lines.push(`Дата: ${reportDate}`);
-  lines.push(`SKU: ${data.length}`);
+  lines.push(`<b>Apple Market Monitor</b>`);
+  lines.push(`<i>Daily market update</i>`);
+  lines.push(`📅 ${reportDate}`);
+  lines.push(`📦 SKU: ${data.length}`);
+
+  lines.push("");
+  lines.push("<b>📊 Summary</b>");
+  lines.push(`🔴 Over RRP: <b>${overRrp.length}</b>`);
+  lines.push(`⚠️ Below RRP: <b>${biggestDiscounts.length}</b>`);
+  lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
+  lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
   lines.push("");
 
-  lines.push("🔴 Over RRP");
+  lines.push("<b>🔴 Over RRP</b>");
+
   if (!overRrp.length) {
     lines.push("Нет позиций выше RRP.");
   } else {
     for (const item of overRrp) {
       lines.push(`• ${buildTitle(item)}`);
+
       lines.push(
-        `  Tracked low: ${formatPrice(item.trackedSellerLowPrice)} | RRP: ${formatPrice(item.rrp)} | Δ: ${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})`,
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
       );
+
+      lines.push(
+        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
+      );
+
       lines.push(`  Sellers: ${buildTrackedSellersInline(item)}`);
     }
   }
 
   lines.push("");
-  lines.push("🟢 Biggest discounts vs RRP");
+  lines.push("<b>⚠️ Below RRP</b>");
   for (const item of biggestDiscounts) {
     lines.push(`• ${buildTitle(item)}`);
     lines.push(
-      `  Tracked low: ${formatPrice(item.trackedSellerLowPrice)} | RRP: ${formatPrice(item.rrp)} | Δ: ${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})`,
+      `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+    );
+
+    lines.push(
+      `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
     );
   }
 
   lines.push("");
-  lines.push("🟠 Market gap alerts");
+  lines.push("<b>🟠 Market gaps</b>");
   if (!marketGapAlerts.length) {
     lines.push("Сильных расхождений между Hotline low и tracked sellers нет.");
   } else {
     for (const item of marketGapAlerts) {
       lines.push(`• ${buildTitle(item)}`);
       lines.push(
-        `  Tracked low: ${formatPrice(item.trackedSellerLowPrice)} | Hotline low: ${formatPrice(item.marketLowPrice)} | Gap: ${formatDiff(item.marketGap)} (${item.marketGapPercent}%)`,
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | Hotline: <b>${formatPrice(item.marketLowPrice)}</b>`,
+      );
+
+      lines.push(
+        `  Gap: <b>${formatDiff(item.marketGap)} (${item.marketGapPercent}%)</b>`,
       );
     }
   }
 
   lines.push("");
-  lines.push("⚪ Missing tracked seller coverage");
+  lines.push("<b>⚪ Missing</b>");
   if (!missingTrackedCoverage.length) {
     lines.push("Все SKU покрыты tracked sellers.");
   } else {
     for (const item of missingTrackedCoverage) {
       lines.push(
-        `• ${buildTitle(item)} | Hotline low: ${formatPrice(item.marketLowPrice)}`,
+        `• ${buildTitle(item)} | Hotline low: <b>${formatPrice(item.marketLowPrice)}</b>`,
       );
     }
   }

@@ -46,6 +46,7 @@ async function sendMessage(text) {
   return axios.post(url, {
     chat_id: CHAT_ID,
     text,
+    parse_mode: "HTML",
   });
 }
 
