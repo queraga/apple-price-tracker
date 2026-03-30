@@ -133,12 +133,96 @@ function getMissingTrackedCoverage(items) {
   );
 }
 
+function getBelowRrpItems(items) {
+  return items.filter(
+    (item) =>
+      isValidNumber(item.trackedSellerLowPrice) &&
+      isValidNumber(item.deltaToRrpPercent) &&
+      item.deltaToRrpPercent < 0,
+  );
+}
+
+function groupIphoneBelowRrp(items, threshold = 10) {
+  const iphoneItems = items.filter(
+    (item) =>
+      item.category === "iPhone" &&
+      typeof item.model === "string" &&
+      item.deltaToRrpPercent < 0,
+  );
+
+  const grouped = new Map();
+
+  for (const item of iphoneItems) {
+    const key = item.model;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(item);
+  }
+
+  const summaries = [];
+  const outliers = [];
+
+  for (const [model, groupItems] of grouped.entries()) {
+    const normalRangeItems = groupItems.filter(
+      (item) =>
+        isValidNumber(item.deltaToRrpPercent) &&
+        item.deltaToRrpPercent >= -threshold,
+    );
+
+    const belowThresholdItems = groupItems.filter(
+      (item) =>
+        isValidNumber(item.deltaToRrpPercent) &&
+        item.deltaToRrpPercent < -threshold,
+    );
+
+    if (normalRangeItems.length > 0) {
+      const percents = normalRangeItems.map((item) => item.deltaToRrpPercent);
+      const minPercent = Math.min(...percents);
+      const maxPercent = Math.max(...percents);
+      const avgPercent =
+        percents.reduce((sum, value) => sum + value, 0) / percents.length;
+
+      summaries.push({
+        model,
+        count: normalRangeItems.length,
+        minPercent: Number(minPercent.toFixed(1)),
+        maxPercent: Number(maxPercent.toFixed(1)),
+        avgPercent: Number(avgPercent.toFixed(1)),
+      });
+    }
+
+    outliers.push(...belowThresholdItems);
+  }
+
+  summaries.sort((a, b) => a.model.localeCompare(b.model));
+  outliers.sort((a, b) => a.deltaToRrpPercent - b.deltaToRrpPercent);
+
+  return { summaries, outliers };
+}
+
+function getNonIphoneBelowRrp(items, threshold = -20) {
+  return items
+    .filter(
+      (item) =>
+        item.category !== "iPhone" &&
+        isValidNumber(item.deltaToRrpPercent) &&
+        item.deltaToRrpPercent <= threshold,
+    )
+    .sort((a, b) => a.deltaToRrpPercent - b.deltaToRrpPercent);
+}
+
 function buildTelegramReport(data) {
   const lines = [];
   const reportDate = data[0]?.date || "n/a";
 
   const overRrp = getOverRrp(data);
-  const biggestDiscounts = getBiggestDiscounts(data);
+
+  const belowRrpItems = getBelowRrpItems(data);
+  const iphoneBelowRrp = groupIphoneBelowRrp(data, 10);
+  const nonIphoneBelowRrp = getNonIphoneBelowRrp(data, -20);
   const marketGapAlerts = getMarketGapAlerts(data);
   const missingTrackedCoverage = getMissingTrackedCoverage(data);
 
@@ -150,7 +234,8 @@ function buildTelegramReport(data) {
   lines.push("");
   lines.push("<b>📊 Summary</b>");
   lines.push(`🔴 Over RRP: <b>${overRrp.length}</b>`);
-  lines.push(`⚠️ Below RRP: <b>${biggestDiscounts.length}</b>`);
+
+  lines.push(`⚠️ Below RRP: <b>${belowRrpItems.length}</b>`);
   lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
   lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
   lines.push("");
@@ -177,15 +262,40 @@ function buildTelegramReport(data) {
 
   lines.push("");
   lines.push("<b>⚠️ Below RRP</b>");
-  for (const item of biggestDiscounts) {
-    lines.push(`• ${buildTitle(item)}`);
-    lines.push(
-      `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
-    );
 
-    lines.push(
-      `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
-    );
+  if (
+    iphoneBelowRrp.summaries.length === 0 &&
+    iphoneBelowRrp.outliers.length === 0 &&
+    nonIphoneBelowRrp.length === 0
+  ) {
+    lines.push("Нет позиций ниже RRP.");
+  } else {
+    for (const summary of iphoneBelowRrp.summaries) {
+      lines.push(`• ${summary.model} series`);
+      lines.push(
+        `  Diff range: <b>${summary.minPercent}% to ${summary.maxPercent}%</b> | Avg: <b>${summary.avgPercent}%</b> | SKU: <b>${summary.count}</b>`,
+      );
+    }
+
+    for (const item of iphoneBelowRrp.outliers) {
+      lines.push(`• ${buildTitle(item)}`);
+      lines.push(
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+      );
+      lines.push(
+        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
+      );
+    }
+
+    for (const item of nonIphoneBelowRrp) {
+      lines.push(`• ${buildTitle(item)}`);
+      lines.push(
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+      );
+      lines.push(
+        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
+      );
+    }
   }
 
   lines.push("");
@@ -195,13 +305,16 @@ function buildTelegramReport(data) {
   } else {
     for (const item of marketGapAlerts) {
       lines.push(`• ${buildTitle(item)}`);
+
       lines.push(
-        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | Hotline: <b>${formatPrice(item.marketLowPrice)}</b>`,
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
       );
 
       lines.push(
-        `  Gap: <b>${formatDiff(item.marketGap)} (${item.marketGapPercent}%)</b>`,
+        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
       );
+
+      lines.push(`  Hotline ref: ${formatPrice(item.marketLowPrice)}`);
     }
   }
 
