@@ -3,6 +3,7 @@ import path from "path";
 import axios from "axios";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
+import FormData from "form-data";
 
 dotenv.config();
 
@@ -10,6 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const inputPath = path.join(__dirname, "../data/telegram-report.txt");
+const fullReportPath = path.join(__dirname, "../data/report.txt");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
@@ -50,6 +52,19 @@ async function sendMessage(text) {
   });
 }
 
+async function sendDocument(filePath) {
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`;
+
+  const form = new FormData();
+  form.append("chat_id", CHAT_ID);
+  form.append("document", fs.createReadStream(filePath));
+
+  return axios.post(url, form, {
+    headers: form.getHeaders(),
+    maxBodyLength: Infinity,
+  });
+}
+
 async function run() {
   if (!BOT_TOKEN) {
     throw new Error("BOT_TOKEN is missing in .env");
@@ -65,6 +80,10 @@ async function run() {
     );
   }
 
+  if (!fs.existsSync(fullReportPath)) {
+    throw new Error("report.txt not found. Run report.js first.");
+  }
+
   const reportText = fs.readFileSync(inputPath, "utf-8").trim();
 
   if (!reportText) {
@@ -77,6 +96,9 @@ async function run() {
     await sendMessage(parts[i]);
     console.log(`Sent part ${i + 1}/${parts.length}`);
   }
+
+  await sendDocument(fullReportPath);
+  console.log("Full report attached.");
 
   console.log("Telegram send complete.");
 }

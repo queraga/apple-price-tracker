@@ -8,7 +8,7 @@
     "scrape": "node src/scraper.js",
     "report": "node src/telegramReport.js",
     "send": "node src/sendTelegram.js",
-    "daily": "node src/scraper.js && node src/telegramReport.js && node src/sendTelegram.js"
+    "daily": "node src/scraper.js && node src/report.js && node src/telegramReport.js && node src/sendTelegram.js"
   },
   "keywords": [],
   "author": "",
