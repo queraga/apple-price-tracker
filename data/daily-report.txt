@@ -1,0 +1,164 @@
+Apple Market Monitor v1
+Date: 2026-03-22
+Total SKU: 22
+
+========== iPhone ==========
+
+iPhone 17 | 256 GB | Black
+Article: MG6J4
+RRP: 46 799 UAH
+Market low: 41 399 UAH
+Delta vs RRP: -5 400 UAH (-11.5%)
+Market offers: 72
+
+iPhone 17 Pro | 256 GB | Silver
+Article: MG8G4
+RRP: 63 999 UAH
+Market low: 59 213,5 UAH
+Delta vs RRP: -4 785,5 UAH (-7.5%)
+Market offers: 67
+
+iPhone 17 Pro | 256 GB | Deep Blue
+Article: MG8J4
+RRP: 63 999 UAH
+Market low: 55 717,5 UAH
+Delta vs RRP: -8 281,5 UAH (-12.9%)
+Market offers: 94
+
+iPhone 17 Pro | 512 GB | Cosmic Orange
+Article: MG8M4
+RRP: 73 999 UAH
+Market low: 69 000 UAH
+Delta vs RRP: -4 999 UAH (-6.8%)
+Market offers: 66
+
+iPhone 17 Pro | 1 TB | Deep Blue
+Article: MG8R4
+RRP: 83 999 UAH
+Market low: 83 999 UAH
+Delta vs RRP: 0 UAH (0.0%)
+Market offers: 52
+
+iPhone 17 Pro Max | 256 GB | Silver
+Article: MFYM4
+RRP: 69 999 UAH
+Market low: 66 440 UAH
+Delta vs RRP: -3 559 UAH (-5.1%)
+Market offers: 90
+
+iPhone 17 Pro Max | 256 GB | Cosmic Orange
+Article: MFYN4
+RRP: 69 999 UAH
+Market low: 62 491 UAH
+Delta vs RRP: -7 508 UAH (-10.7%)
+Market offers: 93
+
+iPhone 17 Pro Max | 256 GB | Deep Blue
+Article: MFYP4
+RRP: 69 999 UAH
+Market low: 65 768,5 UAH
+Delta vs RRP: -4 230,5 UAH (-6.0%)
+Market offers: 93
+
+iPhone 17 Pro Max | 512 GB | Silver
+Article: MFYQ4
+RRP: 79 999 UAH
+Market low: 69 920 UAH
+Delta vs RRP: -10 079 UAH (-12.6%)
+Market offers: 67
+
+iPhone 17 Pro Max | 512 GB | Cosmic Orange
+Article: MFYT4
+RRP: 79 999 UAH
+Market low: 74 432,8 UAH
+Delta vs RRP: -5 566,2 UAH (-7.0%)
+Market offers: 69
+
+iPhone 17 Pro Max | 512 GB | Deep Blue
+Article: MFYU4
+RRP: 79 999 UAH
+Market low: 75 140 UAH
+Delta vs RRP: -4 859 UAH (-6.1%)
+Market offers: 63
+
+iPhone 17 Pro Max | 1 TB | Silver
+Article: MFYV4
+RRP: 89 999 UAH
+Market low: 89 916 UAH
+Delta vs RRP: -83 UAH (-0.1%)
+Market offers: 58
+
+iPhone 17 Pro Max | 2 TB | Cosmic Orange
+Article: MG004
+RRP: 109 999 UAH
+Market low: 98 120 UAH
+Delta vs RRP: -11 879 UAH (-10.8%)
+Market offers: 57
+
+iPhone Air | 256 GB | Space Black
+Article: MG2L4
+RRP: 51 999 UAH
+Market low: 43 599 UAH
+Delta vs RRP: -8 400 UAH (-16.2%)
+Market offers: 67
+
+========== AW ==========
+
+Apple Watch Series 11 GPS 42 mm S/M | Rose Gold Aluminium
+Article: MEU04
+RRP: 22 299 UAH
+Market low: 15 602,6 UAH
+Delta vs RRP: -6 696,4 UAH (-30.0%)
+Market offers: 89
+
+Apple Watch Series 11 GPS 42 mm M/L | Rose Gold Aluminium
+Article: MEU44
+RRP: 22 299 UAH
+Market low: 17 410 UAH
+Delta vs RRP: -4 889 UAH (-21.9%)
+Market offers: 26
+
+Apple Watch Series 11 GPS 46 mm S/M | Jet Black Aluminium
+Article: MEUW4
+RRP: 23 799 UAH
+Market low: 17 050 UAH
+Delta vs RRP: -6 749 UAH (-28.4%)
+Market offers: 78
+
+Apple Watch Series 11 GPS 46 mm M/L | Jet Black Aluminium
+Article: MEUX4
+RRP: 23 799 UAH
+Market low: 16 133 UAH
+Delta vs RRP: -7 666 UAH (-32.2%)
+Market offers: 91
+
+========== Airpods ==========
+
+AirPods Max | Midnight
+Article: MWW43
+RRP: 29 999 UAH
+Market low: 21 899 UAH
+Delta vs RRP: -8 100 UAH (-27.0%)
+Market offers: 102
+
+AirPods 4 ANC | White
+Article: MXP93
+RRP: 10 499 UAH
+Market low: 6 815 UAH
+Delta vs RRP: -3 684 UAH (-35.1%)
+Market offers: 129
+
+AirPods 4 | White
+Article: MXP63
+RRP: 7 399 UAH
+Market low: 4 500 UAH
+Delta vs RRP: -2 899 UAH (-39.2%)
+Market offers: 128
+
+AirPods Pro 3 | White
+Article: MFHP4
+RRP: 14 099 UAH
+Market low: 5 625 UAH
+Delta vs RRP: -8 474 UAH (-60.1%)
+Market offers: 120
+

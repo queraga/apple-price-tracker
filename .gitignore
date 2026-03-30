@@ -1,0 +1,24 @@
+# env
+.env
+
+# node
+node_modules/
+
+# data outputs
+data/results.json
+data/report.txt
+data/telegram-report.txt
+
+# playwright
+.pw-user-data/
+playwright-report/
+test-results/
+
+# mac
+.DS_Store
+
+# logs
+*.log
+
+# vscode (optional)
+.vscode/
