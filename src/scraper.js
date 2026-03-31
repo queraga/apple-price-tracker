@@ -6,6 +6,9 @@ import { fileURLToPath } from "url";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { extractSellerPrice } from "./sellerParsers.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +18,8 @@ const outputPath = path.join(__dirname, "../data/results.json");
 const dataDir = path.join(__dirname, "../data");
 
 const trackedSellers = ["Ябко", "iStore", "MacLove", "GRO"];
+
+const isHeadless = process.env.HEADLESS !== "false";
 
 function parseNumber(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -313,7 +318,9 @@ async function run() {
 
   console.log(`CSV loaded: ${products.length} products`);
 
-  const browser = await chromium.launch({ headless: false });
+  console.log(`Launching browser. Headless: ${isHeadless}`);
+  const browser = await chromium.launch({ headless: isHeadless });
+
   const context = await browser.newContext({
     viewport: { width: 1728, height: 2400 },
   });

@@ -268,7 +268,7 @@ function buildTelegramReport(data) {
     iphoneBelowRrp.outliers.length === 0 &&
     nonIphoneBelowRrp.length === 0
   ) {
-    lines.push("Нет позиций ниже RRP.");
+    lines.push("No SKUs below RRP");
   } else {
     for (const summary of iphoneBelowRrp.summaries) {
       lines.push(`• ${summary.model} series`);
@@ -301,7 +301,9 @@ function buildTelegramReport(data) {
   lines.push("");
   lines.push("<b>🟠 Market gaps</b>");
   if (!marketGapAlerts.length) {
-    lines.push("Сильных расхождений между Hotline low и tracked sellers нет.");
+    lines.push(
+      "No significant discrepancies between Hotline low and tracked sellers. ✅",
+    );
   } else {
     for (const item of marketGapAlerts) {
       lines.push(`• ${buildTitle(item)}`);
@@ -321,7 +323,7 @@ function buildTelegramReport(data) {
   lines.push("");
   lines.push("<b>⚪ Missing</b>");
   if (!missingTrackedCoverage.length) {
-    lines.push("Все SKU покрыты tracked sellers.");
+    lines.push("All SKUs are covered by tracked sellers. ✅");
   } else {
     for (const item of missingTrackedCoverage) {
       lines.push(
