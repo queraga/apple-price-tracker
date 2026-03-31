@@ -79,17 +79,6 @@ function getOverRrp(items) {
     .sort((a, b) => b.deltaToRrp - a.deltaToRrp);
 }
 
-function getBiggestDiscounts(items, limit = 7) {
-  return items
-    .filter(
-      (item) =>
-        isValidNumber(item.trackedSellerLowPrice) &&
-        isValidNumber(item.deltaToRrpPercent),
-    )
-    .sort((a, b) => a.deltaToRrpPercent - b.deltaToRrpPercent)
-    .slice(0, limit);
-}
-
 function getMarketGapAlerts(items, limit = 7) {
   return items
     .map((item) => {
@@ -203,6 +192,8 @@ function groupIphoneBelowRrp(items, threshold = 10) {
   return { summaries, outliers };
 }
 
+const itemSeparator = "--------------------";
+
 function getNonIphoneBelowRrp(items, threshold = -20) {
   return items
     .filter(
@@ -257,6 +248,7 @@ function buildTelegramReport(data) {
       );
 
       lines.push(`  Sellers: ${buildTrackedSellersInline(item)}`);
+      lines.push(itemSeparator);
     }
   }
 
@@ -275,6 +267,7 @@ function buildTelegramReport(data) {
       lines.push(
         `  Diff range: <b>${summary.minPercent}% to ${summary.maxPercent}%</b> | Avg: <b>${summary.avgPercent}%</b> | SKU: <b>${summary.count}</b>`,
       );
+      lines.push(itemSeparator);
     }
 
     for (const item of iphoneBelowRrp.outliers) {
@@ -285,6 +278,7 @@ function buildTelegramReport(data) {
       lines.push(
         `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
       );
+      lines.push(itemSeparator);
     }
 
     for (const item of nonIphoneBelowRrp) {
@@ -295,6 +289,7 @@ function buildTelegramReport(data) {
       lines.push(
         `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
       );
+      lines.push(itemSeparator);
     }
   }
 
