@@ -2,7 +2,7 @@ name: Apple Price Tracker Daily
 
 on:
   schedule:
-    - cron: "45 5 * * *" # 07:45 Berlin
+    - cron: "45 5 * * *"
   workflow_dispatch:
 
 jobs:
