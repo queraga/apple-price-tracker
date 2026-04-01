@@ -224,14 +224,14 @@ function buildTelegramReport(data) {
 
   lines.push("");
   lines.push("<b>📊 Summary</b>");
-  lines.push(`🔴 Over RRP: <b>${overRrp.length}</b>`);
+  lines.push(`🟢 Over RRP: <b>${overRrp.length}</b>`);
 
   lines.push(`⚠️ Below RRP: <b>${belowRrpItems.length}</b>`);
   lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
   lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
   lines.push("");
 
-  lines.push("<b>🔴 Over RRP</b>");
+  lines.push("<b>🟢 Over RRP</b>");
 
   if (!overRrp.length) {
     lines.push("Нет позиций выше RRP.");
