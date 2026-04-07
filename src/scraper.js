@@ -17,7 +17,7 @@ const csvPath = path.join(__dirname, "../config/products.csv");
 const outputPath = path.join(__dirname, "../data/results.json");
 const dataDir = path.join(__dirname, "../data");
 
-const trackedSellers = ["Ябко", "iStore", "MacLove", "GRO"];
+const trackedSellers = ["Ябко", "iStore", "MacLove"];
 
 const isHeadless = process.env.HEADLESS !== "false";
 
@@ -149,7 +149,9 @@ async function findTrackedSellerCards(page, article) {
 
     if (box.width < 1000) continue;
     if (box.height < 100 || box.height > 260) continue;
-    if (box.y < 400) continue;
+
+    // testing with un-limited coverage for search - MEU44 issue
+    // if (box.y < 400) continue;
 
     const buyLinks = await card
       .locator('a[href*="/go/price/"]')

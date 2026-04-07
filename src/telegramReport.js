@@ -131,6 +131,88 @@ function getBelowRrpItems(items) {
   );
 }
 
+function buildBelowRrpDisplayItems(iphoneBelowRrp, nonIphoneBelowRrp) {
+  const result = [];
+
+  for (const summary of iphoneBelowRrp.summaries) {
+    result.push({
+      type: "iphone_summary",
+      category: "iPhone",
+      ...summary,
+    });
+  }
+
+  for (const item of iphoneBelowRrp.outliers) {
+    result.push({
+      type: "item",
+      ...item,
+    });
+  }
+
+  for (const item of nonIphoneBelowRrp) {
+    result.push({
+      type: "item",
+      ...item,
+    });
+  }
+
+  return result;
+}
+
+function getLobLabel(category) {
+  const normalized = String(category || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "iphone") return "📱 iPhone";
+  if (normalized === "aw") return "⌚ Apple Watch";
+  if (normalized === "airpods") return "🎧 AirPods";
+  if (normalized === "ipad") return "📲 iPad";
+  if (normalized === "mac") return "💻 Mac";
+
+  return `📦 ${category || "Other"}`;
+}
+
+function groupItemsByLob(items) {
+  const grouped = new Map();
+
+  for (const item of items) {
+    const lob = getLobLabel(item.category);
+
+    if (!grouped.has(lob)) {
+      grouped.set(lob, []);
+    }
+
+    grouped.get(lob).push(item);
+  }
+
+  return grouped;
+}
+
+function getLobCounts(items) {
+  const counts = new Map();
+
+  for (const item of items) {
+    const lob = getLobLabel(item.category);
+    counts.set(lob, (counts.get(lob) || 0) + 1);
+  }
+
+  return counts;
+}
+
+function pushGroupedItems(lines, items, renderItem) {
+  const grouped = groupItemsByLob(items);
+
+  for (const [lob, lobItems] of grouped.entries()) {
+    lines.push("");
+    lines.push(`<b>${lob}</b>`);
+
+    for (const item of lobItems) {
+      renderItem(item);
+    }
+  }
+}
+
 function groupIphoneBelowRrp(items, threshold = 10) {
   const iphoneItems = items.filter(
     (item) =>
@@ -213,7 +295,13 @@ function buildTelegramReport(data) {
 
   const belowRrpItems = getBelowRrpItems(data);
   const iphoneBelowRrp = groupIphoneBelowRrp(data, 10);
-  const nonIphoneBelowRrp = getNonIphoneBelowRrp(data, -20);
+  const nonIphoneBelowRrp = getNonIphoneBelowRrp(data, -12);
+
+  const belowRrpDisplayItems = buildBelowRrpDisplayItems(
+    iphoneBelowRrp,
+    nonIphoneBelowRrp,
+  );
+
   const marketGapAlerts = getMarketGapAlerts(data);
   const missingTrackedCoverage = getMissingTrackedCoverage(data);
 
@@ -227,16 +315,23 @@ function buildTelegramReport(data) {
   lines.push(`🟢 Over RRP: <b>${overRrp.length}</b>`);
 
   lines.push(`⚠️ Below RRP: <b>${belowRrpItems.length}</b>`);
-  lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
+  // lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
   lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
   lines.push("");
 
+  const lobCounts = getLobCounts(data);
+
+  lines.push("<b>🏷 LOB</b>");
+  for (const [lob, count] of lobCounts.entries()) {
+    lines.push(`${lob}: <b>${count}</b>`);
+  }
+  lines.push("");
   lines.push("<b>🟢 Over RRP</b>");
 
   if (!overRrp.length) {
-    lines.push("Нет позиций выше RRP.");
+    lines.push("No SKUs above RRP.");
   } else {
-    for (const item of overRrp) {
+    pushGroupedItems(lines, overRrp, (item) => {
       lines.push(`• ${buildTitle(item)}`);
 
       lines.push(
@@ -249,71 +344,76 @@ function buildTelegramReport(data) {
 
       lines.push(`  Sellers: ${buildTrackedSellersInline(item)}`);
       lines.push(itemSeparator);
-    }
+    });
   }
 
   lines.push("");
   lines.push("<b>⚠️ Below RRP</b>");
 
-  if (
-    iphoneBelowRrp.summaries.length === 0 &&
-    iphoneBelowRrp.outliers.length === 0 &&
-    nonIphoneBelowRrp.length === 0
-  ) {
+  if (!belowRrpDisplayItems.length) {
     lines.push("No SKUs below RRP");
   } else {
-    for (const summary of iphoneBelowRrp.summaries) {
-      lines.push(`• ${summary.model} series`);
-      lines.push(
-        `  Diff range: <b>${summary.minPercent}% to ${summary.maxPercent}%</b> | Avg: <b>${summary.avgPercent}%</b> | SKU: <b>${summary.count}</b>`,
-      );
-      lines.push(itemSeparator);
+    const groupedBelow = new Map();
+
+    for (const item of belowRrpDisplayItems) {
+      const lob = getLobLabel(item.category);
+
+      if (!groupedBelow.has(lob)) {
+        groupedBelow.set(lob, []);
+      }
+
+      groupedBelow.get(lob).push(item);
     }
 
-    for (const item of iphoneBelowRrp.outliers) {
-      lines.push(`• ${buildTitle(item)}`);
-      lines.push(
-        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
-      );
-      lines.push(
-        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
-      );
-      lines.push(itemSeparator);
-    }
+    for (const [lob, lobItems] of groupedBelow.entries()) {
+      lines.push("");
+      lines.push(`<b>${lob}</b>`);
 
-    for (const item of nonIphoneBelowRrp) {
-      lines.push(`• ${buildTitle(item)}`);
-      lines.push(
-        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
-      );
-      lines.push(
-        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
-      );
-      lines.push(itemSeparator);
-    }
-  }
+      for (const item of lobItems) {
+        if (item.type === "iphone_summary") {
+          lines.push(`• ${item.model} series`);
+          lines.push(
+            `  Diff range: <b>${item.minPercent}% to ${item.maxPercent}%</b> | Avg: <b>${item.avgPercent}%</b> | SKU: <b>${item.count}</b>`,
+          );
+          lines.push(itemSeparator);
+          continue;
+        }
 
-  lines.push("");
-  lines.push("<b>🟠 Market gaps</b>");
-  if (!marketGapAlerts.length) {
-    lines.push(
-      "No significant discrepancies between Hotline low and tracked sellers. ✅",
-    );
-  } else {
-    for (const item of marketGapAlerts) {
-      lines.push(`• ${buildTitle(item)}`);
-
-      lines.push(
-        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
-      );
-
-      lines.push(
-        `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
-      );
-
-      lines.push(`  Hotline ref: ${formatPrice(item.marketLowPrice)}`);
+        lines.push(`• ${buildTitle(item)}`);
+        lines.push(
+          `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+        );
+        lines.push(
+          `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
+        );
+        lines.push(itemSeparator);
+      }
     }
   }
+
+  // Temporary pause for rendering Market gaps
+
+  // lines.push("");
+  // lines.push("<b>🟠 Market gaps</b>");
+  // if (!marketGapAlerts.length) {
+  //   lines.push(
+  //     "No significant discrepancies between Hotline low and tracked sellers. ✅",
+  //   );
+  // } else {
+  //   for (const item of marketGapAlerts) {
+  //     lines.push(`• ${buildTitle(item)}`);
+
+  //     lines.push(
+  //       `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+  //     );
+
+  //     lines.push(
+  //       `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
+  //     );
+
+  //     lines.push(`  Hotline ref: ${formatPrice(item.marketLowPrice)}`);
+  //   }
+  // }
 
   lines.push("");
   lines.push("<b>⚪ Missing</b>");

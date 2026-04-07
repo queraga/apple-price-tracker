@@ -5,7 +5,7 @@ const hotlineUrl =
   "https://hotline.ua/ua/mobile-mobilnye-telefony-i-smartfony/apple-iphone-17-256gb-black/";
 
 const targetArticle = "MG6J4";
-const targetSellers = ["Ябко", "iStore", "MacLove", "GRO"];
+const targetSellers = ["Ябко", "iStore", "MacLove"];
 
 function normalizeText(text) {
   return String(text || "")
