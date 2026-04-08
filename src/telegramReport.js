@@ -16,7 +16,7 @@ function formatPrice(value) {
   if (!isValidNumber(value)) return "n/a";
   return `${new Intl.NumberFormat("uk-UA", {
     maximumFractionDigits: 0,
-  }).format(value)} грн`;
+  }).format(value)} UAH`;
 }
 
 function formatPercent(value) {
