@@ -37,7 +37,7 @@ function formatDiff(value) {
   if (!isValidNumber(value)) return "n/a";
   return `${value > 0 ? "+" : ""}${new Intl.NumberFormat("uk-UA", {
     maximumFractionDigits: 0,
-  }).format(value)} грн`;
+  }).format(value)} UAH`;
 }
 
 function deltaIcon(value) {
@@ -88,41 +88,6 @@ function getOverRrp(items) {
     .sort((a, b) => b.deltaToRrp - a.deltaToRrp);
 }
 
-function getMarketGapAlerts(items, limit = 7) {
-  return items
-    .map((item) => {
-      if (
-        !isValidNumber(item.trackedSellerLowPrice) ||
-        !isValidNumber(item.marketLowPrice)
-      ) {
-        return null;
-      }
-
-      const gap = Number(
-        (item.trackedSellerLowPrice - item.marketLowPrice).toFixed(2),
-      );
-
-      const gapPercent = Number(
-        (
-          ((item.trackedSellerLowPrice - item.marketLowPrice) /
-            item.trackedSellerLowPrice) *
-          100
-        ).toFixed(1),
-      );
-
-      return {
-        ...item,
-        marketGap: gap,
-        marketGapPercent: gapPercent,
-      };
-    })
-    .filter(
-      (item) => item && item.marketGap > 1000 && item.marketGapPercent >= 5,
-    )
-    .sort((a, b) => b.marketGap - a.marketGap)
-    .slice(0, limit);
-}
-
 function getMissingTrackedCoverage(items) {
   return items.filter(
     (item) =>
@@ -140,7 +105,11 @@ function getBelowRrpItems(items) {
   );
 }
 
-function buildBelowRrpDisplayItems(iphoneBelowRrp, nonIphoneBelowRrp) {
+function buildBelowRrpDisplayItems(
+  iphoneBelowRrp,
+  nonIphoneBelowRrp,
+  moderateNonIphoneSummaries,
+) {
   const result = [];
 
   for (const summary of iphoneBelowRrp.summaries) {
@@ -149,6 +118,10 @@ function buildBelowRrpDisplayItems(iphoneBelowRrp, nonIphoneBelowRrp) {
       category: "iPhone",
       ...summary,
     });
+  }
+
+  for (const summary of moderateNonIphoneSummaries) {
+    result.push(summary);
   }
 
   for (const item of iphoneBelowRrp.outliers) {
@@ -285,7 +258,7 @@ function groupIphoneBelowRrp(items, threshold = 10) {
 
 const itemSeparator = "--------------------";
 
-function getNonIphoneBelowRrp(items, threshold = -20) {
+function getNonIphoneBelowRrp(items, threshold = -10) {
   return items
     .filter(
       (item) =>
@@ -296,6 +269,102 @@ function getNonIphoneBelowRrp(items, threshold = -20) {
     .sort((a, b) => a.deltaToRrpPercent - b.deltaToRrpPercent);
 }
 
+function getModerateNonIphoneBelowRrp(items, threshold = -10) {
+  return items.filter(
+    (item) =>
+      item.category !== "iPhone" &&
+      isValidNumber(item.deltaToRrpPercent) &&
+      item.deltaToRrpPercent < 0 &&
+      item.deltaToRrpPercent > threshold,
+  );
+}
+
+function getModerateSeriesLabel(item) {
+  const model = String(item.model || "").toLowerCase();
+
+  if (item.category === "iPad") {
+    if (model.includes("ipad pro")) return "iPad Pro";
+    if (model.includes("ipad air")) return "iPad Air";
+    if (model.includes("ipad")) return "iPad";
+  }
+
+  if (item.category === "AW") {
+    if (model.includes("apple watch") && model.includes("se")) {
+      return "Apple Watch SE";
+    }
+
+    if (model.includes("apple watch") && model.includes("ultra")) {
+      return "Apple Watch Ultra";
+    }
+
+    if (model.includes("apple watch series")) {
+      return "Apple Watch Series";
+    }
+  }
+
+  if (item.category === "Airpods") {
+    return item.model;
+  }
+
+  return item.model || item.category;
+}
+
+function buildModerateNonIphoneSummaries(items) {
+  const grouped = new Map();
+
+  for (const item of items) {
+    const seriesLabel = getModerateSeriesLabel(item);
+    const groupKey = `${item.category}::${seriesLabel}`;
+
+    if (!grouped.has(groupKey)) {
+      grouped.set(groupKey, {
+        category: item.category,
+        seriesLabel,
+        items: [],
+      });
+    }
+
+    grouped.get(groupKey).items.push(item);
+  }
+
+  const result = [];
+
+  for (const [, group] of grouped.entries()) {
+    const groupItems = group.items;
+
+    if (groupItems.length === 1) {
+      result.push({
+        type: "item",
+        ...groupItems[0],
+      });
+      continue;
+    }
+
+    const percents = groupItems
+      .map((item) => item.deltaToRrpPercent)
+      .filter((value) => isValidNumber(value));
+
+    if (!percents.length) continue;
+
+    const minPercent = Math.min(...percents);
+    const maxPercent = Math.max(...percents);
+    const avgPercent =
+      percents.reduce((sum, value) => sum + value, 0) / percents.length;
+
+    result.push({
+      type: "moderate_summary",
+      category: group.category,
+      seriesLabel: group.seriesLabel,
+      count: groupItems.length,
+      minPercent: Number(minPercent.toFixed(1)),
+      maxPercent: Number(maxPercent.toFixed(1)),
+      avgPercent: Number(avgPercent.toFixed(1)),
+    });
+  }
+
+  return result;
+}
+
 function buildTelegramReport(data) {
   const lines = [];
   const reportDate = formatReportDate(data[0]?.date);
@@ -304,14 +373,19 @@ function buildTelegramReport(data) {
 
   const belowRrpItems = getBelowRrpItems(data);
   const iphoneBelowRrp = groupIphoneBelowRrp(data, 10);
-  const nonIphoneBelowRrp = getNonIphoneBelowRrp(data, -12);
+  const nonIphoneBelowRrp = getNonIphoneBelowRrp(data);
+
+  const moderateNonIphoneBelowRrp = getModerateNonIphoneBelowRrp(data, -10);
+  const moderateNonIphoneSummaries = buildModerateNonIphoneSummaries(
+    moderateNonIphoneBelowRrp,
+  );
 
   const belowRrpDisplayItems = buildBelowRrpDisplayItems(
     iphoneBelowRrp,
     nonIphoneBelowRrp,
+    moderateNonIphoneSummaries,
   );
 
-  const marketGapAlerts = getMarketGapAlerts(data);
   const missingTrackedCoverage = getMissingTrackedCoverage(data);
 
   lines.push(`<b>Apple Market Monitor</b>`);
@@ -324,7 +398,6 @@ function buildTelegramReport(data) {
   lines.push(`🟢 Over RRP: <b>${overRrp.length}</b>`);
 
   lines.push(`⚠️ Below RRP: <b>${belowRrpItems.length}</b>`);
-  // lines.push(`🟠 Market gaps: <b>${marketGapAlerts.length}</b>`);
   lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
   lines.push("");
 
@@ -388,6 +461,16 @@ function buildTelegramReport(data) {
           continue;
         }
 
+        if (item.type === "moderate_summary") {
+          lines.push(`• ${item.seriesLabel} | Close to RRP`);
+
+          lines.push(
+            `  Diff range: <b>${item.minPercent}% to ${item.maxPercent}%</b> | Avg: <b>${item.avgPercent}%</b> | SKU: <b>${item.count}</b>`,
+          );
+          lines.push(itemSeparator);
+          continue;
+        }
+
         lines.push(`• ${buildTitle(item)}`);
         lines.push(
           `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
@@ -399,30 +482,6 @@ function buildTelegramReport(data) {
       }
     }
   }
-
-  // Temporary pause for rendering Market gaps
-
-  // lines.push("");
-  // lines.push("<b>🟠 Market gaps</b>");
-  // if (!marketGapAlerts.length) {
-  //   lines.push(
-  //     "No significant discrepancies between Hotline low and tracked sellers. ✅",
-  //   );
-  // } else {
-  //   for (const item of marketGapAlerts) {
-  //     lines.push(`• ${buildTitle(item)}`);
-
-  //     lines.push(
-  //       `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
-  //     );
-
-  //     lines.push(
-  //       `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
-  //     );
-
-  //     lines.push(`  Hotline ref: ${formatPrice(item.marketLowPrice)}`);
-  //   }
-  // }
 
   lines.push("");
   lines.push("<b>⚪ Missing</b>");
