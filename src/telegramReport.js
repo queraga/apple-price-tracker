@@ -12,6 +12,15 @@ function isValidNumber(value) {
   return typeof value === "number" && !Number.isNaN(value);
 }
 
+function formatReportDate(value) {
+  if (!value) return "n/a";
+
+  const [year, month, day] = String(value).split("-");
+  if (!year || !month || !day) return value;
+
+  return `${day}-${month}-${year}`;
+}
+
 function formatPrice(value) {
   if (!isValidNumber(value)) return "n/a";
   return `${new Intl.NumberFormat("uk-UA", {
@@ -289,7 +298,7 @@ function getNonIphoneBelowRrp(items, threshold = -20) {
 
 function buildTelegramReport(data) {
   const lines = [];
-  const reportDate = data[0]?.date || "n/a";
+  const reportDate = formatReportDate(data[0]?.date);
 
   const overRrp = getOverRrp(data);
 
