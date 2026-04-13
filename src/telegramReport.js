@@ -288,6 +288,12 @@ function getModerateSeriesLabel(item) {
     if (model.includes("ipad")) return "iPad";
   }
 
+  if (item.category === "Mac") {
+    if (model.includes("macbook pro")) return "MacBook Pro";
+    if (model.includes("macbook air")) return "MacBook Air";
+    if (model.includes("macbook neo")) return "MacBook Neo";
+  }
+
   if (item.category === "AW") {
     if (model.includes("apple watch") && model.includes("se")) {
       return "Apple Watch SE";
