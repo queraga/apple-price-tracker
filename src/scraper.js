@@ -30,6 +30,43 @@ function parseNumber(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+function isDateWithinRange(dateStr, startStr, endStr) {
+  if (!dateStr || !startStr || !endStr) return false;
+  return dateStr >= startStr && dateStr <= endStr;
+}
+
+function getEffectiveReferencePrice(product, today) {
+  const rrp = parseNumber(product.RRP);
+  const promoPrice = parseNumber(product.PROMO_PRICE);
+
+  const promoStart = String(product.PROMO_START || "").trim();
+  const promoEnd = String(product.PROMO_END || "").trim();
+
+  const isPromoActive =
+    promoPrice !== null &&
+    promoStart &&
+    promoEnd &&
+    isDateWithinRange(today, promoStart, promoEnd);
+
+  if (isPromoActive) {
+    return {
+      referencePrice: promoPrice,
+      referencePriceType: "PROMO",
+      promoPrice,
+      promoStart,
+      promoEnd,
+    };
+  }
+
+  return {
+    referencePrice: rrp,
+    referencePriceType: "RRP",
+    promoPrice,
+    promoStart,
+    promoEnd,
+  };
+}
+
 function normalizeText(text) {
   return String(text || "")
     .toLowerCase()
@@ -331,9 +368,17 @@ async function run() {
 
   try {
     for (const product of products) {
+      // const hotlineUrl = product.HOTLINE_URL;
+      // const article = product.ARTICLE;
+      // const rrp = parseNumber(product.RRP);
+
       const hotlineUrl = product.HOTLINE_URL;
       const article = product.ARTICLE;
+
+      const today = new Date().toISOString().split("T")[0];
       const rrp = parseNumber(product.RRP);
+      const referenceData = getEffectiveReferencePrice(product, today);
+      const referencePrice = referenceData.referencePrice;
 
       console.log(`Processing: ${product.MODEL} (${article})`);
 
@@ -357,14 +402,29 @@ async function run() {
           trackedSellerLowPrice ?? marketData.marketLowPrice;
 
         const deltaToRrp =
-          rrp !== null && finalLowPrice !== null
-            ? Number((finalLowPrice - rrp).toFixed(2))
+          referencePrice !== null && finalLowPrice !== null
+            ? Number((finalLowPrice - referencePrice).toFixed(2))
             : null;
 
         const deltaToRrpPercent =
-          rrp !== null && finalLowPrice !== null
-            ? Number((((finalLowPrice - rrp) / rrp) * 100).toFixed(1))
+          referencePrice !== null && finalLowPrice !== null
+            ? Number(
+                (
+                  ((finalLowPrice - referencePrice) / referencePrice) *
+                  100
+                ).toFixed(1),
+              )
             : null;
+
+        // const deltaToRrp =
+        //   rrp !== null && finalLowPrice !== null
+        //     ? Number((finalLowPrice - rrp).toFixed(2))
+        //     : null;
+
+        // const deltaToRrpPercent =
+        //   rrp !== null && finalLowPrice !== null
+        //     ? Number((((finalLowPrice - rrp) / rrp) * 100).toFixed(1))
+        //     : null;
 
         const result = {
           date: new Date().toISOString().split("T")[0],
@@ -376,6 +436,11 @@ async function run() {
           hotlineUrl: product.HOTLINE_URL,
 
           rrp,
+          promoPrice: referenceData.promoPrice,
+          promoStart: referenceData.promoStart || null,
+          promoEnd: referenceData.promoEnd || null,
+          referencePrice,
+          referencePriceType: referenceData.referencePriceType,
           marketLowPrice: marketData.marketLowPrice,
           marketHighPrice: marketData.marketHighPrice,
           marketOfferCount: marketData.marketOfferCount,
@@ -417,6 +482,11 @@ async function run() {
           hotlineUrl: product.HOTLINE_URL,
 
           rrp,
+          promoPrice: referenceData.promoPrice,
+          promoStart: referenceData.promoStart || null,
+          promoEnd: referenceData.promoEnd || null,
+          referencePrice,
+          referencePriceType: referenceData.referencePriceType,
           marketLowPrice: null,
           marketHighPrice: null,
           marketOfferCount: null,

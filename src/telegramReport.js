@@ -28,6 +28,17 @@ function formatPrice(value) {
   }).format(value)} UAH`;
 }
 
+function buildReferenceLabel(item) {
+  if (
+    item.referencePriceType === "PROMO" &&
+    isValidNumber(item.referencePrice)
+  ) {
+    return `🔥 Promo: <b>${formatPrice(item.referencePrice)}</b>`;
+  }
+
+  return `RRP: <b>${formatPrice(item.rrp)}</b>`;
+}
+
 function formatPercent(value) {
   if (!isValidNumber(value)) return "n/a";
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
@@ -394,8 +405,6 @@ function buildTelegramReport(data) {
 
   const missingTrackedCoverage = getMissingTrackedCoverage(data);
 
-  lines.push(`<b>Apple Market Monitor</b>`);
-  lines.push(`<i>Daily market update</i>`);
   lines.push(`📅 ${reportDate}`);
   lines.push(`📦 SKU: ${data.length}`);
 
@@ -404,7 +413,10 @@ function buildTelegramReport(data) {
   lines.push(`🟢 Over RRP: <b>${overRrp.length}</b>`);
 
   lines.push(`⚠️ Below RRP: <b>${belowRrpItems.length}</b>`);
-  lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
+
+  if (missingTrackedCoverage.length > 0) {
+    lines.push(`⚪ Missing: <b>${missingTrackedCoverage.length}</b>`);
+  }
   lines.push("");
 
   const lobCounts = getLobCounts(data);
@@ -423,7 +435,9 @@ function buildTelegramReport(data) {
       lines.push(`• ${buildTitle(item)}`);
 
       lines.push(
-        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+        `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | ${buildReferenceLabel(item)}`,
+
+        // `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
       );
 
       lines.push(
@@ -479,7 +493,7 @@ function buildTelegramReport(data) {
 
         lines.push(`• ${buildTitle(item)}`);
         lines.push(
-          `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | RRP: <b>${formatPrice(item.rrp)}</b>`,
+          `  Low: <b>${formatPrice(item.trackedSellerLowPrice)}</b> | ${buildReferenceLabel(item)}`,
         );
         lines.push(
           `  Diff: ${deltaIcon(item.deltaToRrp)} <b>${formatDiff(item.deltaToRrp)} (${formatPercent(item.deltaToRrpPercent)})</b>`,
@@ -489,11 +503,10 @@ function buildTelegramReport(data) {
     }
   }
 
-  lines.push("");
-  lines.push("<b>⚪ Missing</b>");
-  if (!missingTrackedCoverage.length) {
-    lines.push("All SKUs are covered by tracked sellers. ✅");
-  } else {
+  if (missingTrackedCoverage.length > 0) {
+    lines.push("");
+    lines.push("<b>⚪ Missing</b>");
+
     for (const item of missingTrackedCoverage) {
       lines.push(
         `• ${buildTitle(item)} | Hotline low: <b>${formatPrice(item.marketLowPrice)}</b>`,
